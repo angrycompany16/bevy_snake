@@ -43,6 +43,7 @@ struct SnakeHead {
 #[derive(Component)]
 struct SnakeBody {
     parts: Vec<GridPosition>,
+
 }
 
 #[derive(Component, Deref, DerefMut)]
