@@ -36,8 +36,13 @@ enum Direction {
 }
 
 #[derive(Component)]
-struct Player {
+struct SnakeHead {
     direction: Direction
+}
+
+#[derive(Component)]
+struct SnakeBody {
+    parts: Vec<GridPosition>,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -45,6 +50,10 @@ struct GridPosition(Vec2);
 
 #[derive(Component, Deref, DerefMut)]
 struct SnakeUpdateTimer(Timer);
+
+// impl SnakeSegmentBundle {
+
+// }
 
 fn setup(
     mut commands: Commands
@@ -66,11 +75,12 @@ fn setup(
             },
             ..default()
         },
-        Player {
+        SnakeHead {
             direction: Direction::Right
         },
         GridPosition(START_POS),
-        SnakeUpdateTimer(Timer::from_seconds(1. / TICK_RATE, TimerMode::Repeating))
+        SnakeUpdateTimer(Timer::from_seconds(1. / TICK_RATE, TimerMode::Repeating)),
+        SnakeBody { parts: vec!(GridPosition(START_POS - vec2(1., 0.))) }
     ));
 }
 
@@ -78,20 +88,20 @@ fn move_snake(
     time: Res<Time>,
     mut query: Query<(
         &mut Transform, 
-        &Player, 
+        &SnakeHead, 
         &mut GridPosition, 
         &mut SnakeUpdateTimer)>
 ) {
     let (
         mut transform, 
-        player, 
+        snake_head, 
         mut grid_position, 
         mut snake_update_timer
     ) = query.single_mut();
 
     snake_update_timer.tick(time.delta());
     if snake_update_timer.just_finished() {
-        match player.direction {
+        match snake_head.direction {
             Direction::Left => { grid_position.x -= 1.; },
             Direction::Right => { grid_position.x += 1.; },
             Direction::Up => { grid_position.y -= 1.; },
@@ -123,32 +133,32 @@ fn convert_coordinates(grid_coordinates: Vec2) -> Vec2 {
 
 fn control_snake(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(&mut Player)>
+    mut query: Query<&mut SnakeHead>
 ) {
-    let mut player = query.single_mut();
+    let mut snake_head = query.single_mut();
 
     if keyboard_input.just_pressed(KeyCode::Left) {
-        match player.direction {
+        match snake_head.direction {
             Direction::Right => {  }
-            _ => { player.direction = Direction::Left; }
+            _ => { snake_head.direction = Direction::Left; }
         }
     }
     if keyboard_input.just_pressed(KeyCode::Right) {
-        match player.direction {
+        match snake_head.direction {
             Direction::Left => {  }
-            _ => { player.direction = Direction::Right; }
+            _ => { snake_head.direction = Direction::Right; }
         }
     }
     if keyboard_input.just_pressed(KeyCode::Up) {
-        match player.direction {
+        match snake_head.direction {
             Direction::Down => {  }
-            _ => { player.direction = Direction::Up; }
+            _ => { snake_head.direction = Direction::Up; }
         }
     }
     if keyboard_input.just_pressed(KeyCode::Down) {
-        match player.direction {
+        match snake_head.direction {
             Direction::Up => {  }
-            _ => { player.direction = Direction::Down; }
+            _ => { snake_head.direction = Direction::Down; }
         }
     }
 }
