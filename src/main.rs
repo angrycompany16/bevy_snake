@@ -40,6 +40,16 @@ struct Player {
     direction: Direction
 }
 
+impl Player {
+    fn change_dir(&mut self) {
+        self.direction = Direction::Left;
+    }
+}
+
+trait print {
+    
+}
+
 #[derive(Component, Deref, DerefMut)]
 struct GridPosition(Vec2);
 
