@@ -28,6 +28,7 @@ fn main() {
         .run();
 }
 
+#[derive(PartialEq)]
 enum Direction {
     Left,
     Right,
@@ -37,24 +38,17 @@ enum Direction {
 
 #[derive(Component)]
 struct SnakeHead {
-    direction: Direction
+    direction: Direction,
 }
 
 #[derive(Component)]
-struct SnakeBody {
-    parts: Vec<GridPosition>,
-
-}
+struct SnakeBodyPart;
 
 #[derive(Component, Deref, DerefMut)]
 struct GridPosition(Vec2);
 
 #[derive(Component, Deref, DerefMut)]
 struct SnakeUpdateTimer(Timer);
-
-// impl SnakeSegmentBundle {
-
-// }
 
 fn setup(
     mut commands: Commands
@@ -63,7 +57,7 @@ fn setup(
 
     commands.insert_resource(ClearColor(BG_COLOR));
 
-    commands.spawn((
+    let snake_head = commands.spawn((
         SpriteBundle {
             transform: Transform {
                 translation: convert_coordinates(START_POS).extend(0.0),
@@ -80,9 +74,28 @@ fn setup(
             direction: Direction::Right
         },
         GridPosition(START_POS),
-        SnakeUpdateTimer(Timer::from_seconds(1. / TICK_RATE, TimerMode::Repeating)),
-        SnakeBody { parts: vec!(GridPosition(START_POS - vec2(1., 0.))) }
-    ));
+        SnakeUpdateTimer(Timer::from_seconds(1. / TICK_RATE, TimerMode::Repeating))
+    )).id();
+
+    let snake_body_part = commands.spawn((
+        SpriteBundle {
+            transform: Transform {
+                translation: convert_coordinates(START_POS - vec2(1., 0.)).extend(0.0),
+                scale: vec3(CELL_DIMENSIONS.x, CELL_DIMENSIONS.y, 1.),
+                ..default()
+            },
+            sprite: Sprite {
+                color: SNAKE_COLOR,
+                ..default()
+            },
+            ..default()
+        },
+        SnakeBodyPart,
+        GridPosition(START_POS),
+        SnakeUpdateTimer(Timer::from_seconds(1. / TICK_RATE, TimerMode::Repeating))
+    )).id();
+
+    commands.entity(snake_head).add_child(snake_body_part);
 }
 
 fn move_snake(
@@ -139,27 +152,26 @@ fn control_snake(
     let mut snake_head = query.single_mut();
 
     if keyboard_input.just_pressed(KeyCode::Left) {
-        match snake_head.direction {
-            Direction::Right => {  }
-            _ => { snake_head.direction = Direction::Left; }
+        if snake_head.direction != Direction::Right {
+            snake_head.direction = Direction::Left;
         }
     }
+
     if keyboard_input.just_pressed(KeyCode::Right) {
-        match snake_head.direction {
-            Direction::Left => {  }
-            _ => { snake_head.direction = Direction::Right; }
+        if snake_head.direction != Direction::Left {
+            snake_head.direction = Direction::Right;
         }
     }
+
     if keyboard_input.just_pressed(KeyCode::Up) {
-        match snake_head.direction {
-            Direction::Down => {  }
-            _ => { snake_head.direction = Direction::Up; }
+        if snake_head.direction != Direction::Down {
+            snake_head.direction = Direction::Up;
         }
     }
+
     if keyboard_input.just_pressed(KeyCode::Down) {
-        match snake_head.direction {
-            Direction::Up => {  }
-            _ => { snake_head.direction = Direction::Down; }
+        if snake_head.direction != Direction::Up {
+            snake_head.direction = Direction::Down;
         }
     }
 }
