@@ -7,9 +7,9 @@ const GRID_DIMENSIONS: Vec2 = vec2(24., 24.);
 
 const START_POS: Vec2 = vec2(5., 5.);
 
-const BG_COLOR: Color = Color::rgb(0.7, 0.7, 0.7);
+const BG_COLOR: Color = Color::rgb(0.3, 0.3, 0.3);
 const SNAKE_HEAD_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
-const SNAKE_BODY_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
+const SNAKE_BODY_COLOR: Color = Color::rgb(0.7, 0.7, 0.7);
 const FOOD_COLOR: Color = Color::rgb(0.9, 0.2, 0.2);
 
 const TICK_RATE: f32 = 8.0;
@@ -33,7 +33,7 @@ fn main() {
                 Timer::from_seconds(1.0 / TICK_RATE, TimerMode::Repeating)
             )
         )
-        .add_systems(Startup, (setup, spawn_food))
+        .add_systems(Startup, setup)
         .add_systems(Update, (
             move_snake, control_snake, tick_timer, check_food_collision, extend_snake_system, spawn_food))
         .add_event::<EatFoodEvent>()
@@ -81,16 +81,16 @@ struct SnakeFoodBundle {
 struct EatFoodEvent;
 
 impl SnakeBodyPartBundle {
-    fn new(spawn_pos: Vec2) -> SnakeBodyPartBundle {
+    fn new(spawn_pos: Vec2, scale: f32, color: Color) -> SnakeBodyPartBundle {
         return SnakeBodyPartBundle {
             spritebundle: SpriteBundle {
                 transform: Transform {
                     translation: convert_coordinates(spawn_pos).extend(0.0),
-                    scale: vec3(CELL_DIMENSIONS.x, CELL_DIMENSIONS.y, 1.0),
+                    scale: vec3(CELL_DIMENSIONS.x, CELL_DIMENSIONS.y, 1.0) * scale,
                     ..default()
                 },
                 sprite: Sprite {
-                    color: SNAKE_HEAD_COLOR,
+                    color: color,
                     ..default()
                 },
                 ..default()
@@ -113,7 +113,6 @@ impl SnakeFoodBundle {
                     color: FOOD_COLOR,
                     ..default()
                 },
-                visibility: Visibility::Visible,
                 ..default()
             },
             snake_food: SnakeFood {
@@ -149,12 +148,12 @@ fn setup(mut commands: Commands) {
     )).id();
 
     let snake_head = commands.spawn((
-        SnakeBodyPartBundle::new(START_POS),
+        SnakeBodyPartBundle::new(START_POS, 1.0, SNAKE_HEAD_COLOR),
         Name::new("Snake head part")
     )).id();
 
     let snake_tail = commands.spawn((
-        SnakeBodyPartBundle::new(START_POS - vec2(1.0, 0.0)),
+        SnakeBodyPartBundle::new(START_POS - vec2(1.0, 0.0), 0.8, SNAKE_BODY_COLOR),
         Name::new("Snake tail part")
     )).id();
 
@@ -232,14 +231,34 @@ fn check_food_collision(
     }
 }
 
-fn spawn_food(mut commands: Commands, mut ev_eat_food: EventReader<EatFoodEvent>) {
+fn spawn_food(
+    mut commands: Commands, 
+    mut ev_eat_food: EventReader<EatFoodEvent>,
+    mut snake_query: Query<&mut Snake>
+) {
+    let snake = snake_query.single_mut();
+
     for _ in ev_eat_food.read() {
-        let mut rng = rand::thread_rng();
-    
-        commands.spawn(SnakeFoodBundle::new(vec2(
-            (rng.gen::<f32>() * GRID_DIMENSIONS.x - 1.0).round(), 
-            (rng.gen::<f32>() * GRID_DIMENSIONS.y - 1.0).round()
-        )));
+        let rng = rand::thread_rng();
+        
+        fn generate_position(snake: &Snake, mut rng: ThreadRng) -> Vec2 {
+            let rand_pos = vec2(
+                (rng.gen::<f32>() * GRID_DIMENSIONS.x).min(GRID_DIMENSIONS.x - 1.0).round(), 
+                (rng.gen::<f32>() * GRID_DIMENSIONS.y).min(GRID_DIMENSIONS.y - 1.0).round()
+            );
+
+            if snake.positions.contains(&rand_pos) {
+                return generate_position(snake, rng);
+            }
+
+            return rand_pos;
+        }
+
+        let rand_pos = generate_position(snake.as_ref(), rng.clone());
+
+        println!("{}, {}", snake.positions.contains(&rand_pos), &rand_pos);
+
+        commands.spawn(SnakeFoodBundle::new(rand_pos));
     }
 }
 
@@ -256,7 +275,7 @@ fn extend_snake_system(
         snake.positions.push(tail_pos);
 
         let new_snake_part = commands.spawn(
-            SnakeBodyPartBundle::new(tail_pos)
+            SnakeBodyPartBundle::new(tail_pos, 0.8, SNAKE_BODY_COLOR)
         ).id();
         
         let mut snake_entity = commands.entity(snake_entity);
