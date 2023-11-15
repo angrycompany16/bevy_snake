@@ -14,6 +14,14 @@ const FOOD_COLOR: Color = Color::rgb(0.9, 0.2, 0.2);
 
 const TICK_RATE: f32 = 8.0;
 
+// #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
+// enum GameState {
+//     #[default]
+//     Start,
+//     Main,
+//     GameOver
+// }
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -35,7 +43,8 @@ fn main() {
         )
         .add_systems(Startup, setup)
         .add_systems(Update, (
-            move_snake, control_snake, tick_timer, check_food_collision, extend_snake_system, spawn_food))
+            move_snake, control_snake, tick_timer, check_food_collision, extend_snake_system, spawn_food, check_self_collision))
+        // .add_state::<GameState>()
         .add_event::<EatFoodEvent>()
         .run();
 }
@@ -227,6 +236,22 @@ fn check_food_collision(
                 
                 ev_eat_food.send(EatFoodEvent);
             }
+        }
+    }
+}
+
+fn check_self_collision(
+    mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
+    snake_query: Query<&Snake>
+) {
+    let snake = snake_query.single();
+
+    let head_pos = snake.positions[0];
+
+    for position in &snake.positions[1..] {
+        if *position == head_pos {
+            println!("Game over!");
+            app_exit_events.send(bevy::app::AppExit);
         }
     }
 }
