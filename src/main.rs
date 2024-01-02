@@ -35,7 +35,7 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugins(WorldInspectorPlugin::new())
+        // .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(
             SnakeUpdateTimer(
                 Timer::from_seconds(1.0 / TICK_RATE, TimerMode::Repeating)
@@ -280,8 +280,6 @@ fn spawn_food(
         }
 
         let rand_pos = generate_position(snake.as_ref(), rng.clone());
-
-        println!("{}, {}", snake.positions.contains(&rand_pos), &rand_pos);
 
         commands.spawn(SnakeFoodBundle::new(rand_pos));
     }
