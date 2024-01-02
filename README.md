@@ -3,7 +3,7 @@ THis is a simple implementation of the well-known game Snake using the game engi
 
 To play this yourself, clone the repository and use 
 
-´ cargo run ´
+` cargo run `
 
 ## Screenshots
 ![Screenshot from 2024-01-02 11-14-34](https://github.com/angrycompany16/bevy_snake/assets/81249185/7c364319-8049-454a-912b-05b6b2e83e36)
